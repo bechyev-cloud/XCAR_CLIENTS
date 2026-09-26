@@ -353,6 +353,16 @@ height:40px;background:#ffffff;border-top:1px solid #e5e5e5;font-size:11px;
 .settingsFolder.open .settingsFolderBody{display:block;animation:page2FadeIn .22s ease;}
 .settingsFolderBody .settingsSectionDesc{margin-top:0;}
 
+/* ---------- автообновление данных (интервал ползунком) ---------- */
+.autoSyncIntervalRow{margin-top:12px;transition:opacity .2s ease;}
+.autoSyncIntervalRow.disabled{opacity:.4;pointer-events:none;}
+.autoSyncIntervalLabel{font-size:12.5px;font-weight:700;color:#2a2f36;margin-bottom:8px;}
+.autoSyncIntervalLabel b{color:#0047ff;font-size:14px;}
+.autoSyncSlider{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:6px;background:#e2e6ec;outline:none;margin:0;padding:0;}
+.autoSyncSlider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:#0047ff;box-shadow:0 2px 8px rgba(0,71,255,.4);cursor:pointer;border:3px solid #fff;}
+.autoSyncSlider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#0047ff;box-shadow:0 2px 8px rgba(0,71,255,.4);cursor:pointer;border:3px solid #fff;}
+.autoSyncIntervalScale{display:flex;justify-content:space-between;font-size:10px;color:#9aa3b0;font-weight:600;margin-top:4px;}
+
 /* ---------- переключатель темы ---------- */
 .themeOptRow{display:flex;gap:10px;}
 .themeOpt{flex:1;min-width:0;width:auto;background:#fff;border:1.5px solid #eef1f6;border-radius:16px;padding:14px 10px;text-align:center;cursor:pointer;font-family:inherit;transition:background .15s ease,border-color .15s ease;margin-top:0;color:inherit;}
@@ -437,6 +447,9 @@ html[data-theme="dark"] .carPickerBtn{background:#1a2338;border-color:#26314a;co
 html[data-theme="dark"] .gearBtn,html[data-theme="dark"] .navBtn{background:linear-gradient(145deg,#1a2338,#121a2b);box-shadow:0 4px 12px rgba(0,0,0,.4);color:#c7d3ff;}
 html[data-theme="dark"] .settingsOpenBtn{background:#121a2b;border-color:#26314a;color:#e7ebf3;}
 html[data-theme="dark"] .rentSwitchTrack{background:#26314a;}
+html[data-theme="dark"] .autoSyncSlider{background:#26314a;}
+html[data-theme="dark"] .autoSyncIntervalLabel{color:#c7cedd;}
+html[data-theme="dark"] .autoSyncIntervalScale{color:#5c6784;}
 html[data-theme="dark"] .page2Tabs{background:#0d1424;}
 html[data-theme="dark"] .carRentSince,html[data-theme="dark"] .contactPhone,html[data-theme="dark"] .billingModeDesc,html[data-theme="dark"] .historyItemDate,html[data-theme="dark"] .carItemPrice,html[data-theme="dark"] .historyDayFolderCount,html[data-theme="dark"] .page2Subtitle,html[data-theme="dark"] .historySubtitle{color:#8b93a7;}
 html[data-theme="dark"] .contactItem{background:#1a2338;}
@@ -653,6 +666,30 @@ html[data-theme="dark"] .blacklistResultItem{background:#2a1414;border-color:#5c
 </label>
 <button type="button" class="settingsOpenBtn" id="accountDeleteBtn" style="display:none;margin-top:8px;border-color:#f6cfcf;color:#c62828;">Удалить аккаунт с сервера</button>
 <div class="settingsBackupHint" id="accountHint"></div>
+</div>
+</div>
+
+<div class="settingsFolder" id="folderAutoSync">
+<div class="settingsFolderHeader" data-folder="autosync">
+<div class="settingsFolderIconBadge">🔁</div>
+<div class="settingsFolderHeaderText">
+<div class="settingsFolderTitle">Автообновление данных</div>
+<div class="settingsFolderHint" id="autoSyncFolderHint">Каждые 30 сек</div>
+</div>
+<div class="settingsFolderChev">▾</div>
+</div>
+<div class="settingsFolderBody">
+<div class="settingsSectionDesc">Если данные изменились на другом телефоне (автопарк, аренда, история) — приложение само подтянет их с сервера через заданный интервал</div>
+<label class="rentSwitch" id="autoSyncToggleRow">
+<input type="checkbox" id="autoSyncToggleCheck">
+<span class="rentSwitchLabel">Автообновление включено</span>
+<span class="rentSwitchTrack"><span class="rentSwitchThumb"></span></span>
+</label>
+<div class="autoSyncIntervalRow" id="autoSyncIntervalRow">
+<div class="autoSyncIntervalLabel">Интервал обновления: <b id="autoSyncIntervalValue">30</b> сек</div>
+<input type="range" id="autoSyncIntervalSlider" class="autoSyncSlider" min="1" max="59" step="1" value="30">
+<div class="autoSyncIntervalScale"><span>1 сек</span><span>59 сек</span></div>
+</div>
 </div>
 </div>
 
@@ -1020,7 +1057,7 @@ const SUBSCRIPTION_DEFAULT_DAYS=365;
 const DEFAULT_SERVER_URL="https://xcar-kalk-klient.onrender.com";
 const DEFAULT_SERVER_ID="default-render";
 function defaultSettings(){
-return {billingMode:"prepay",account:{serverUrl:DEFAULT_SERVER_URL,username:"",password:"",email:"",phone:"",connected:false},serverProfiles:[{id:DEFAULT_SERVER_ID,name:"Render (XCAR)",url:DEFAULT_SERVER_URL}],activeServerProfileId:DEFAULT_SERVER_ID,pushEnabled:false,pushEndpoint:"",theme:"light",showNavArrows:true,subscriptionUntil:Date.now()+SUBSCRIPTION_DEFAULT_DAYS*86400000};
+return {billingMode:"prepay",account:{serverUrl:DEFAULT_SERVER_URL,username:"",password:"",email:"",phone:"",connected:false},serverProfiles:[{id:DEFAULT_SERVER_ID,name:"Render (XCAR)",url:DEFAULT_SERVER_URL}],activeServerProfileId:DEFAULT_SERVER_ID,pushEnabled:false,pushEndpoint:"",theme:"light",showNavArrows:true,subscriptionUntil:Date.now()+SUBSCRIPTION_DEFAULT_DAYS*86400000,autoSyncEnabled:true,autoSyncIntervalSec:30};
 }
 function loadSettings(){
 try{
@@ -1045,7 +1082,9 @@ pushEnabled:!!parsed.pushEnabled,
 pushEndpoint:typeof parsed.pushEndpoint==="string"?parsed.pushEndpoint:"",
 theme:parsed.theme==="dark"?"dark":"light",
 showNavArrows:parsed.showNavArrows!==false,
-subscriptionUntil:typeof parsed.subscriptionUntil==="number"&&parsed.subscriptionUntil>0?parsed.subscriptionUntil:(Date.now()+SUBSCRIPTION_DEFAULT_DAYS*86400000)
+subscriptionUntil:typeof parsed.subscriptionUntil==="number"&&parsed.subscriptionUntil>0?parsed.subscriptionUntil:(Date.now()+SUBSCRIPTION_DEFAULT_DAYS*86400000),
+autoSyncEnabled:parsed.autoSyncEnabled!==false,
+autoSyncIntervalSec:Math.min(59,Math.max(1,parseInt(parsed.autoSyncIntervalSec,10)||30))
 };
 }catch(e){return defaultSettings();}
 }
@@ -2347,8 +2386,11 @@ vibrate(12);
 });
 
 // ---------- показать/скрыть стрелки навигации ----------
-document.getElementById("navArrowsToggleRow").addEventListener("click",()=>{
-settings.showNavArrows=!settings.showNavArrows;
+// слушаем "change" на самом чекбоксе (а не "click" на строке) — так браузер
+// сам корректно переключает галочку по тапу на label, без гонки состояний
+// на реальных сенсорных экранах (тот же приём, что и у переключателя push-уведомлений)
+document.getElementById("navArrowsToggleCheck").addEventListener("change",(e)=>{
+settings.showNavArrows=e.target.checked;
 saveSettings();
 applyNavArrowsVisibility();
 renderNavArrowsUI();
@@ -2369,6 +2411,7 @@ renderServerProfiles();
 renderThemeUI();
 renderNavArrowsUI();
 renderSubscriptionUI();
+renderAutoSyncUI();
 document.getElementById("settingsBackupText").value="";
 document.getElementById("settingsBackupHint").textContent="";
 settingsModal.classList.add("open");
@@ -2451,6 +2494,8 @@ settings.activeServerProfileId=typeof parsed.settings.activeServerProfileId==="s
 // устройству/аккаунту, а не к резервной копии данных)
 if(typeof parsed.settings.theme==="string") settings.theme=parsed.settings.theme==="dark"?"dark":"light";
 if(typeof parsed.settings.showNavArrows==="boolean") settings.showNavArrows=parsed.settings.showNavArrows;
+if(typeof parsed.settings.autoSyncEnabled==="boolean") settings.autoSyncEnabled=parsed.settings.autoSyncEnabled;
+if(parsed.settings.autoSyncIntervalSec) settings.autoSyncIntervalSec=Math.min(59,Math.max(1,parseInt(parsed.settings.autoSyncIntervalSec,10)||30));
 }
 selectedCarIdx=null;
 saveCars();
@@ -2468,6 +2513,8 @@ applyTheme();
 renderThemeUI();
 applyNavArrowsVisibility();
 renderNavArrowsUI();
+restartAutoSyncTimer();
+renderAutoSyncUI();
 hint.textContent="Импортировано ✓";
 hint.style.color="#0a9a4a";
 flashSuccess(document.getElementById("settingsImportBtn"));
@@ -3068,9 +3115,50 @@ vibrate([20,40,20]);
 });
 });
 renderAccountUI();
-setInterval(()=>{
+
+// ---------- автообновление данных с сервера — настраиваемый интервал 1–59 сек ----------
+let autoSyncTimer=null;
+function restartAutoSyncTimer(){
+if(autoSyncTimer){clearInterval(autoSyncTimer);autoSyncTimer=null;}
+if(settings.autoSyncEnabled===false) return;
+const sec=Math.min(59,Math.max(1,parseInt(settings.autoSyncIntervalSec,10)||30));
+autoSyncTimer=setInterval(()=>{
 if(settings.account&&settings.account.connected&&!document.hidden) syncNow({silent:true});
-},30000);
+},sec*1000);
+}
+restartAutoSyncTimer();
+function renderAutoSyncUI(){
+const check=document.getElementById("autoSyncToggleCheck");
+if(check) check.checked=settings.autoSyncEnabled!==false;
+const sec=Math.min(59,Math.max(1,parseInt(settings.autoSyncIntervalSec,10)||30));
+const slider=document.getElementById("autoSyncIntervalSlider");
+if(slider) slider.value=sec;
+const valEl=document.getElementById("autoSyncIntervalValue");
+if(valEl) valEl.textContent=sec;
+const row=document.getElementById("autoSyncIntervalRow");
+if(row) row.classList.toggle("disabled",settings.autoSyncEnabled===false);
+const hint=document.getElementById("autoSyncFolderHint");
+if(hint) hint.textContent=settings.autoSyncEnabled===false?"Выключено":`Каждые ${sec} сек`;
+}
+document.getElementById("autoSyncToggleCheck").addEventListener("change",(e)=>{
+settings.autoSyncEnabled=e.target.checked;
+saveSettings();
+restartAutoSyncTimer();
+renderAutoSyncUI();
+vibrate(12);
+});
+document.getElementById("autoSyncIntervalSlider").addEventListener("input",(e)=>{
+const sec=Math.min(59,Math.max(1,parseInt(e.target.value,10)||30));
+document.getElementById("autoSyncIntervalValue").textContent=sec;
+});
+document.getElementById("autoSyncIntervalSlider").addEventListener("change",(e)=>{
+settings.autoSyncIntervalSec=Math.min(59,Math.max(1,parseInt(e.target.value,10)||30));
+saveSettings();
+restartAutoSyncTimer();
+renderAutoSyncUI();
+vibrate(8);
+});
+
 if(settings.account&&settings.account.connected){
 setTimeout(()=>syncNow({}),1200);
 }
